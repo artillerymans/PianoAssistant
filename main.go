@@ -15,6 +15,27 @@ import (
 
 type MusicNote []Note
 
+const lClef = `
+      ██       
+   ███ ███ ██  
+   ███  ███    
+    █   ██ ██  
+       ███     
+    ████       
+   ██          
+
+`
+const hClef = `
+       ███     
+      ████     
+      ███      
+    ██████     
+    ███████    
+      ████     
+      ████     
+
+`
+
 // 1. 定义 Model
 type model struct {
 	typeValue int
@@ -140,24 +161,44 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit // 按 q 退出
 		}
 
-		if key == "a" {
+		if key == "v" || key == "V" {
 			m.showTip = !m.showTip
-		} else if key == "-" || key == "+" {
-			if key == "-" {
+		} else if key == "up" || key == "down" {
+			if key == "down" {
 				if m.countDown.total > m.countDown.minCount {
 					m.countDown.total -= 1
-
+					m.countDown.current = m.countDown.total
 				}
-			} else if key == "+" {
+			} else if key == "up" {
 				if m.countDown.total < m.countDown.maxCount {
 					m.countDown.total += 1
+					m.countDown.current = m.countDown.total
 				}
 			}
-
 		} else if key == "h" || key == "H" {
-			m.typeValue = TypeH
+			if m.typeValue != TypeH {
+				for index := range m.listLowMusicNote {
+					m.listLowMusicNote[index].Selected = false
+				}
+				m.typeValue = TypeH
+				//随机生成一个
+				var index = random.RandInt(0, len(m.listHeightMusicNote))
+				m.index = index
+				m.listHeightMusicNote[m.index].Selected = true
+				m.countDown.current = m.countDown.total
+			}
 		} else if key == "l" || key == "L" {
-			m.typeValue = TypeL
+			if m.typeValue != TypeL {
+				for index := range m.listHeightMusicNote {
+					m.listHeightMusicNote[index].Selected = false
+				}
+				m.typeValue = TypeL
+				//随机生成一个
+				var index = random.RandInt(0, len(m.listLowMusicNote))
+				m.index = index
+				m.listLowMusicNote[m.index].Selected = true
+				m.countDown.current = m.countDown.total
+			}
 		} else {
 			if m.typeValue == TypeH {
 				var tempModel = m.listHeightMusicNote[m.index]
@@ -260,7 +301,7 @@ func (m model) View() string {
 
 	buildStr.WriteString(strings.Repeat("\n", 1))
 
-	buildStr.WriteString(progressStyle.Render(fmt.Sprintln("进度:", strings.Repeat("=", m.countDown.current))))
+	buildStr.WriteString(progressStyle.Render(fmt.Sprintln(fmt.Sprintf(`计时:%d/%d`, m.countDown.current, m.countDown.total), strings.Repeat("=", m.countDown.current))))
 
 	buildStr.WriteString(strings.Repeat("\n", 1))
 
@@ -269,17 +310,17 @@ func (m model) View() string {
 
 	buildStr.WriteString(lipgloss.JoinHorizontal(
 		lipgloss.Center,
-		symbolStyle.Align(lipgloss.Center).Render("      ██       \n   ███ ███ ██  \n   ███  ███    \n    █   ██ ██  \n       ███     \n    ████       \n   ██          \n\n"),
+		symbolStyle.Align(lipgloss.Center).Render(lClef),
 		noteStyle.Align(lipgloss.Left).Render(lBuilStr.String()),
-		symbolStyle.Align(lipgloss.Center).Render("       ███     \n      ████     \n      ███      \n    ██████     \n    ███████    \n      ████     \n      ████     \n\n"),
+		symbolStyle.Align(lipgloss.Center).Render(hClef),
 		noteStyle.Align(lipgloss.Right).Render(hBuilStr.String()),
 	))
 
 	buildStr.WriteString(strings.Repeat("\n", 1))
 
-	buildStr.WriteString(inputStyle.Render("输入 A 或者 a, 显示隐藏提示"))
+	buildStr.WriteString(inputStyle.Render("输入 V 或者 v, 显示隐藏提示"))
 	buildStr.WriteString("\n")
-	buildStr.WriteString(inputStyle.Padding(1, 0).Render("+ - 调节倒计时(默认10s)"))
+	buildStr.WriteString(inputStyle.Padding(1, 0).Render("方向 ⬆️  ⬇️  调节倒计时(默认10s)"))
 	buildStr.WriteString("\n")
 	buildStr.WriteString(inputStyle.Render("H or h 调整为高音区(默认) <-> L or l 调整为低音区"))
 
