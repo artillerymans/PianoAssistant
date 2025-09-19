@@ -147,7 +147,7 @@ func (m model) Init() tea.Cmd {
 
 func taskCount() tea.Cmd {
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
-		return time.Time(t)
+		return t
 	})
 }
 
@@ -161,7 +161,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit // 按 q 退出
 		}
 
-		if key == "v" || key == "V" {
+		if key == "v" {
 			m.showTip = !m.showTip
 		} else if key == "up" || key == "down" {
 			if key == "down" {
@@ -175,7 +175,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.countDown.current = m.countDown.total
 				}
 			}
-		} else if key == "h" || key == "H" {
+		} else if key == "h" {
 			if m.typeValue != TypeH {
 				for index := range m.listLowMusicNote {
 					m.listLowMusicNote[index].Selected = false
@@ -187,7 +187,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.listHeightMusicNote[m.index].Selected = true
 				m.countDown.current = m.countDown.total
 			}
-		} else if key == "l" || key == "L" {
+		} else if key == "l" {
 			if m.typeValue != TypeL {
 				for index := range m.listHeightMusicNote {
 					m.listHeightMusicNote[index].Selected = false
@@ -233,6 +233,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.countDown.current = m.countDown.total
 				} else {
 					m.warningCount += 1
+
 				}
 			}
 
@@ -264,10 +265,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *model) reset() {
-	m.countDown.current = 19
-}
-
 var titleStyle = lipgloss.NewStyle().
 	Bold(true).
 	Foreground(lipgloss.Color("#00ADB5"))
@@ -293,7 +290,7 @@ func (m model) View() string {
 
 	var buildStr = strings.Builder{}
 
-	buildStr.WriteString(titleStyle.Render(fmt.Sprintln(strutil.Pad("五线谱速记助手", 140, "*"))))
+	buildStr.WriteString(titleStyle.Render(fmt.Sprintln(strutil.Pad("速记助手", 140, "*"))))
 
 	buildStr.WriteString(strings.Repeat("\n", 1))
 
@@ -375,7 +372,7 @@ func main() {
 	p := tea.NewProgram(
 		model{
 			typeValue:           TypeH,
-			flagStyle:           "🔴",
+			flagStyle:           "🍏🐖", //"⭕️", //"🔴", "🎵"
 			listHeightMusicNote: list,
 			listLowMusicNote:    lowList,
 			index:               tempIndex,
