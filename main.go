@@ -49,8 +49,8 @@ type model struct {
 	index               int  //当前的Index
 	showTip             bool //是否显示提示
 	countDown           Countdown
-
-	flagStyle string //当前音符的样式
+	flagStyle           string //当前音符的样式
+	autoCountDown       bool   //是否自动倒计时
 }
 
 const (
@@ -142,7 +142,11 @@ func drawLowMusicNote() []Note {
 
 // 2. 初始化（程序启动时调用一次）
 func (m model) Init() tea.Cmd {
-	return taskCount() // 没有需要运行的命令就返回 nil
+	if m.autoCountDown {
+		return taskCount()
+	} else {
+		return nil
+	}
 }
 
 func taskCount() tea.Cmd {
@@ -199,6 +203,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.listLowMusicNote[m.index].Selected = true
 				m.countDown.current = m.countDown.total
 			}
+		} else if key == "c" {
+			var enable = !m.autoCountDown
+			m.autoCountDown = enable
+			var tempCountDown = m.countDown
+			tempCountDown.current = tempCountDown.total
+			m.countDown = tempCountDown
 		} else {
 			if m.typeValue == TypeH {
 				var tempModel = m.listHeightMusicNote[m.index]
@@ -239,29 +249,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		}
 	case time.Time:
-		if m.countDown.current > 0 {
-			m.countDown.current -= 1
-		} else {
-			m.miss += 1
-			m.countDown.current = m.countDown.total
-			m.count += 1
-			if m.typeValue == TypeH {
-				m.listHeightMusicNote[m.index].Selected = false
-				//随机生成一个
-				var index = random.RandInt(0, len(m.listHeightMusicNote))
-				m.index = index
-				m.listHeightMusicNote[m.index].Selected = true
+		if m.autoCountDown {
+			if m.countDown.current > 0 {
+				m.countDown.current -= 1
 			} else {
-				m.listLowMusicNote[m.index].Selected = false
-				//随机生成一个
-				var index = random.RandInt(0, len(m.listLowMusicNote))
-				m.index = index
-				m.listLowMusicNote[m.index].Selected = true
+				m.miss += 1
+				m.countDown.current = m.countDown.total
+				m.count += 1
+				if m.typeValue == TypeH {
+					m.listHeightMusicNote[m.index].Selected = false
+					//随机生成一个
+					var index = random.RandInt(0, len(m.listHeightMusicNote))
+					m.index = index
+					m.listHeightMusicNote[m.index].Selected = true
+				} else {
+					m.listLowMusicNote[m.index].Selected = false
+					//随机生成一个
+					var index = random.RandInt(0, len(m.listLowMusicNote))
+					m.index = index
+					m.listLowMusicNote[m.index].Selected = true
+				}
 			}
 		}
 		return m, taskCount()
 	}
-
 	return m, nil
 }
 
@@ -298,9 +309,10 @@ func (m model) View() string {
 
 	buildStr.WriteString(strings.Repeat("\n", 1))
 
-	buildStr.WriteString(progressStyle.Render(fmt.Sprintln(fmt.Sprintf(`计时:%d/%d`, m.countDown.current, m.countDown.total), strings.Repeat("=", m.countDown.current))))
-
-	buildStr.WriteString(strings.Repeat("\n", 1))
+	if m.autoCountDown {
+		buildStr.WriteString(progressStyle.Render(fmt.Sprintln(fmt.Sprintf(`计时:%d/%d`, m.countDown.current, m.countDown.total), strings.Repeat("=", m.countDown.current))))
+		buildStr.WriteString(strings.Repeat("\n", 1))
+	}
 
 	var lBuilStr = m.listLowMusicNote.drawMusicNote(m.flagStyle, m.showTip)
 	var hBuilStr = m.listHeightMusicNote.drawMusicNote(m.flagStyle, m.showTip)
@@ -315,11 +327,13 @@ func (m model) View() string {
 
 	buildStr.WriteString(strings.Repeat("\n", 1))
 
-	buildStr.WriteString(inputStyle.Render("输入 V 或者 v, 显示隐藏提示"))
+	buildStr.WriteString(inputStyle.Render("V 显示隐藏提示"))
 	buildStr.WriteString("\n")
 	buildStr.WriteString(inputStyle.Padding(1, 0).Render("方向 ⬆️  ⬇️  调节倒计时(默认10s)"))
 	buildStr.WriteString("\n")
-	buildStr.WriteString(inputStyle.Render("H or h 调整为高音区(默认) <-> L or l 调整为低音区"))
+	buildStr.WriteString(inputStyle.Render("H 调整为高音区(默认) <-> L 调整为低音区"))
+	buildStr.WriteString("\n")
+	buildStr.WriteString(inputStyle.Render("C 关闭或者开启倒计时(默认开启); Q 退出当前应用"))
 
 	return lipgloss.NewStyle().Padding(1, 1, 1, 1).Render(buildStr.String())
 }
@@ -338,7 +352,7 @@ func (list MusicNote) drawMusicNote(flagStyle string, showTip bool) strings.Buil
 		/*上加 或者 下加线的长度 包括音符在内*/
 		var lineTypeMinLength int = 10
 		var tipTag string = ""
-		if showTip {
+		if showTip && len(item.UiDes) > 0 {
 			tipTag = strconv.Itoa(item.Tag)
 		}
 		switch item.lineType {
@@ -383,6 +397,7 @@ func main() {
 				maxCount: 40,
 				minCount: 5,
 			},
+			autoCountDown: true,
 		},
 	)
 	if _, err := p.Run(); err != nil {
