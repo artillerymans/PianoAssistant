@@ -64,6 +64,8 @@ const (
 	TypeL
 )
 
+var typeList = []int{TypeL, TypeH}
+
 type Countdown struct {
 	total    int
 	current  int
@@ -179,30 +181,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.countDown.current = m.countDown.total
 				}
 			}
-		} else if key == "h" {
-			if m.typeValue != TypeH {
-				for index := range m.listLowMusicNote {
-					m.listLowMusicNote[index].Selected = false
-				}
-				m.typeValue = TypeH
-				//随机生成一个
-				var index = random.RandInt(0, len(m.listHeightMusicNote))
-				m.index = index
-				m.listHeightMusicNote[m.index].Selected = true
-				m.countDown.current = m.countDown.total
-			}
-		} else if key == "l" {
-			if m.typeValue != TypeL {
-				for index := range m.listHeightMusicNote {
-					m.listHeightMusicNote[index].Selected = false
-				}
-				m.typeValue = TypeL
-				//随机生成一个
-				var index = random.RandInt(0, len(m.listLowMusicNote))
-				m.index = index
-				m.listLowMusicNote[m.index].Selected = true
-				m.countDown.current = m.countDown.total
-			}
 		} else if key == "c" {
 			var enable = !m.autoCountDown
 			m.autoCountDown = enable
@@ -214,16 +192,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				var tempModel = m.listHeightMusicNote[m.index]
 				var tag = strconv.Itoa(tempModel.Tag)
 				if strings.EqualFold(tag, key) {
-					/*清除掉原先的index选择*/
-					//正确的 清空一下原来选中的数据
-					m.listHeightMusicNote[m.index].Selected = false
-					//随机生成一个
-					var index = random.RandInt(0, len(m.listHeightMusicNote))
-					m.index = index
-					m.listHeightMusicNote[m.index].Selected = true
-					m.count += 1
-					m.correct += 1
-					m.countDown.current = m.countDown.total
+					m.randomNoteByCorrect()
 				} else {
 					m.warningCount += 1
 				}
@@ -231,16 +200,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				var tempModel = m.listLowMusicNote[m.index]
 				var tag = strconv.Itoa(tempModel.Tag)
 				if strings.EqualFold(tag, key) {
-					/*清除掉原先的index选择*/
-					//正确的 清空一下原来选中的数据
-					m.listLowMusicNote[m.index].Selected = false
-					//随机生成一个
-					var index = random.RandInt(0, len(m.listLowMusicNote))
-					m.index = index
-					m.listLowMusicNote[m.index].Selected = true
-					m.count += 1
-					m.correct += 1
-					m.countDown.current = m.countDown.total
+					m.randomNoteByCorrect()
 				} else {
 					m.warningCount += 1
 
@@ -256,6 +216,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.miss += 1
 				m.countDown.current = m.countDown.total
 				m.count += 1
+
+				m.clearNote()
+
+				m.randomTypeHL()
+
 				if m.typeValue == TypeH {
 					m.listHeightMusicNote[m.index].Selected = false
 					//随机生成一个
@@ -274,6 +239,44 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, taskCount()
 	}
 	return m, nil
+}
+
+func (m *model) clearNote() {
+	if m.typeValue == TypeH {
+		m.listHeightMusicNote[m.index].Selected = false
+	} else {
+		m.listLowMusicNote[m.index].Selected = false
+	}
+}
+
+func (m *model) randomTypeHL() {
+	if random.RandBool() {
+		m.typeValue = TypeH
+	} else {
+		m.typeValue = TypeL
+	}
+}
+
+func (m *model) randomNoteByCorrect() {
+
+	m.clearNote()
+
+	m.randomTypeHL()
+
+	if m.typeValue == TypeH {
+		//随机生成一个
+		var index = random.RandInt(0, len(m.listHeightMusicNote))
+		m.index = index
+		m.listHeightMusicNote[m.index].Selected = true
+	} else {
+		//随机生成一个
+		var index = random.RandInt(0, len(m.listLowMusicNote))
+		m.index = index
+		m.listLowMusicNote[m.index].Selected = true
+	}
+	m.count += 1
+	m.correct += 1
+	m.countDown.current = m.countDown.total
 }
 
 var titleStyle = lipgloss.NewStyle().
@@ -330,8 +333,6 @@ func (m model) View() string {
 	buildStr.WriteString(inputStyle.Render("V 显示隐藏提示"))
 	buildStr.WriteString("\n")
 	buildStr.WriteString(inputStyle.Padding(1, 0).Render("方向 ⬆️  ⬇️  调节倒计时(默认10s)"))
-	buildStr.WriteString("\n")
-	buildStr.WriteString(inputStyle.Render("H 调整为高音区(默认) <-> L 调整为低音区"))
 	buildStr.WriteString("\n")
 	buildStr.WriteString(inputStyle.Render("C 关闭或者开启倒计时(默认开启); Q 退出当前应用"))
 

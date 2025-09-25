@@ -4,3 +4,13 @@
 ***
 ![效果图](./example.png)
 
+
+### 编译
+* Linux || MacOs
+```
+go build -o app
+```
+* Windows(Mac中输出)
+```
+GOOS=windows GOARCH=amd64 go build -o app.exe
+```
